@@ -8,7 +8,7 @@
         * { box-sizing: border-box; user-select: none; }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #150f29; overflow: hidden;
+            background-color: #120c24; overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
             display: flex; justify-content: center; align-items: center;
         }
@@ -17,7 +17,7 @@
             position: relative;
             width: 100vw; height: 100vh;
             max-width: 450px;
-            background: linear-gradient(to bottom, #2b1b4e, #150f29);
+            background: linear-gradient(to bottom, #251647, #120c24);
             display: flex; flex-direction: column; align-items: center;
         }
 
@@ -29,7 +29,7 @@
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(21, 15, 41, 0.96); display: flex; flex-direction: column;
+            background: rgba(18, 12, 36, 0.95); display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; z-index: 20; text-align: center;
             padding: 20px;
         }
@@ -53,18 +53,18 @@
 <div id="game-container">
     <div id="start-screen" class="screen">
         <h1>HELIXDRIX</h1>
-        <p style="margin-bottom: 25px; color: #ddd; font-size: 16px;">العب بالمكعب الأحمر وحطم البرج الحلزوني!</p>
+        <p style="margin-bottom: 25px; color: #ddd; font-size: 16px;">المكعب الأحمر والحلقات الحلزونية الناعمة!</p>
         <button class="btn" onclick="startGame()">ابدأ اللعب</button>
     </div>
 
     <div id="gameover-screen" class="screen" style="display: none;">
         <h1 style="color: #ff5252;">انتهت اللعبة</h1>
-        <p id="final-score" style="font-size: 22px; margin-bottom: 25px;">النتيجة: 3607</p>
+        <p id="final-score" style="font-size: 22px; margin-bottom: 25px;">النتيجة: 0</p>
         <button class="btn" onclick="startGame()">إعادة المحاولة</button>
     </div>
 
     <div id="hud">
-        <div>النتيجة: <span id="score">3607</span></div>
+        <div>النتيجة: <span id="score">0</span></div>
         <div style="color: #ffeb3b;">⚡ طاقة</div>
     </div>
 
@@ -90,13 +90,6 @@
             gain.gain.setValueAtTime(0.12, now);
             gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
             osc.start(now); osc.stop(now + 0.1);
-        } else if (type === 'break') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(160, now);
-            osc.frequency.linearRampToValueAtTime(50, now + 0.15);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-            osc.start(now); osc.stop(now + 0.15);
         } else if (type === 'gameover') {
             osc.type = 'square';
             osc.frequency.setValueAtTime(200, now);
@@ -116,44 +109,37 @@
     canvas.height = GH;
 
     let gameState = 'START';
-    let score = 3607;
-    let towerAngle = 0;
-    let targetAngle = 0;
+    let score = 0;
+    let rotationAngle = 0;
+    let targetRotation = 0;
 
     let player = {
         x: GW / 2,
         y: 160,
         vy: 0,
         size: 24,
-        gravity: 0.48,
-        jumpPower: -8.8
+        gravity: 0.45,
+        jumpPower: -8.5
     };
 
-    let slices = [];
+    let disks = [];
 
     function initLevel() {
-        score = 3607;
+        score = 0;
         scoreEl.innerText = score;
         player.y = 140; player.vy = 0;
         
-        slices = [];
-        let totalSlices = 16;
-        for (let i = 0; i < totalSlices; i++) {
-            let parts = [];
-            let gapIndex = Math.floor(Math.random() * 8);
-            for (let p = 0; p < 8; p++) {
-                if (p === gapIndex || p === (gapIndex + 1) % 8) {
-                    parts.push({ active: false }); // فجوة للعبور
-                } else {
-                    parts.push({
-                        active: true,
-                        color: i === totalSlices - 1 ? '#00e676' : (i % 2 === 0 ? '#ff3b7a' : '#7b2cbf') // ألوان وردية وبنفسجية مطابقة للفيديو والصور
-                    });
-                }
-            }
-            slices.push({
-                y: 220 + i * 28,
-                parts: parts
+        disks = [];
+        let numDisks = 14;
+        for (let i = 0; i < numDisks; i++) {
+            let gapStart = Math.random() * Math.PI * 1.5;
+            disks.push({
+                y: 200 + i * 42,
+                radius: 110,
+                gapStart: gapStart,
+                gapSize: 1.4,
+                color: i === numDisks - 1 ? '#00e676' : (i % 2 === 0 ? '#ff3366' : '#9c27b0'), // ألوان وردية وبنفسجية مطابقة للصور
+                broken: false
             });
         }
     }
@@ -175,54 +161,54 @@
         document.getElementById('gameover-screen').style.display = 'flex';
     }
 
-    // تدوير البرج بسلاسة عبر السحب بالإصبع يميناً ويساراً
     let isDragging = false, startX = 0;
     window.addEventListener('pointerdown', e => { isDragging = true; startX = e.clientX; });
     window.addEventListener('pointermove', e => {
         if (!isDragging || gameState !== 'PLAYING') return;
-        targetAngle += (e.clientX - startX) * 0.012;
+        targetRotation += (e.clientX - startX) * 0.012;
         startX = e.clientX;
     });
     window.addEventListener('pointerup', () => { isDragging = false; });
 
     function update() {
         if (gameState === 'PLAYING') {
-            towerAngle += (targetAngle - towerAngle) * 0.15;
+            rotationAngle += (targetRotation - rotationAngle) * 0.1;
             player.vy += player.gravity;
             player.y += player.vy;
 
             let centerX = GW / 2;
-            let currentSliceIdx = Math.floor((player.y - 200) / 28);
+            let currentDiskIndex = Math.floor((player.y - 180) / 42);
 
-            if (currentSliceIdx >= 0 && currentSliceIdx < slices.length) {
-                let slice = slices[currentSliceIdx];
-                let hitAnyActive = false;
+            if (currentDiskIndex >= 0 && currentDiskIndex < disks.length) {
+                let disk = disks[currentDiskIndex];
+                if (!disk.broken) {
+                    let playerAngle = Math.atan2(player.y - disk.y, player.x - centerX) - rotationAngle;
+                    while (playerAngle < 0) playerAngle += Math.PI * 2;
+                    while (playerAngle > Math.PI * 2) playerAngle -= Math.PI * 2;
 
-                let playerAngle = Math.atan2(player.y - slice.y, player.x - centerX) - towerAngle;
-                while (playerAngle < 0) playerAngle += Math.PI * 2;
-                while (playerAngle > Math.PI * 2) playerAngle -= Math.PI * 2;
+                    let inGap = playerAngle >= disk.gapStart && playerAngle <= (disk.gapStart + disk.gapSize);
 
-                let partIndex = Math.floor((playerAngle / (Math.PI * 2)) * 8) % 8;
-                if (slice.parts[partIndex] && slice.parts[partIndex].active) {
-                    hitAnyActive = true;
-                }
-
-                if (hitAnyActive && player.vy > 0) {
-                    player.y = slice.y - player.size / 2;
-                    player.vy = player.jumpPower;
-                    score += 12;
-                    scoreEl.innerText = score;
-                    playSound('bounce');
-                    slice.parts[partIndex].active = false; // تحطيم القطعة
+                    if (inGap && player.vy > 0) {
+                        player.vy = player.jumpPower * 0.85;
+                        score += 10;
+                        scoreEl.innerText = score;
+                        playSound('bounce');
+                    } else if (!inGap && player.y + player.size / 2 >= disk.y && player.y - player.size / 2 <= disk.y + 10) {
+                        if (player.vy > 0) {
+                            player.y = disk.y - player.size / 2;
+                            player.vy = player.jumpPower;
+                            playSound('bounce');
+                        }
+                    }
                 }
             }
 
-            if (player.y > slices[slices.length - 1].y + 50) {
-                score += 400;
+            if (player.y > disks[disks.length - 1].y + 40) {
+                score += 100;
                 initLevel();
             }
 
-            if (player.y > GH + 60) gameOver();
+            if (player.y > GH + 50) gameOver();
         }
         draw();
         requestAnimationFrame(update);
@@ -232,35 +218,24 @@
         ctx.clearRect(0, 0, GW, GH);
         let centerX = GW / 2;
 
-        // رسم البرج الأبيض المركزي تماماً مثل الفيديو
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(centerX - 16, 80, 32, GH - 80);
-
-        // رسم الحلقات الدائرية المتدرجة
-        slices.forEach((slice) => {
+        // رسم الحلقات الدائرية الحلزونية الناعمة المنحنية تماماً مثل الصور
+        disks.forEach((disk) => {
+            if (disk.broken) return;
             ctx.save();
-            ctx.translate(centerX, slice.y);
-            ctx.rotate(towerAngle);
+            ctx.translate(centerX, disk.y);
+            ctx.rotate(rotationAngle);
 
-            let numParts = 8;
-            let angleStep = (Math.PI * 2) / numParts;
+            ctx.beginPath();
+            ctx.arc(0, 0, disk.radius, disk.gapStart + disk.gapSize, disk.gapStart + Math.PI * 2);
+            ctx.lineWidth = 14;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = disk.color;
+            ctx.stroke();
 
-            for (let i = 0; i < numParts; i++) {
-                if (!slice.parts[i].active) continue;
-
-                ctx.beginPath();
-                ctx.arc(0, 0, 115, i * angleStep, (i + 1) * angleStep);
-                ctx.lineTo(0, 0);
-                ctx.fillStyle = slice.parts[i].color;
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                ctx.stroke();
-            }
             ctx.restore();
         });
 
-        // رسم المكعب الأحمر العصبي الخاص بك ذي العيون في المنتصف تماماً
+        // رسم المكعب الأحمر العصبي ذي العيون في المنتصف تماماً
         ctx.save();
         ctx.translate(centerX, player.y);
         ctx.fillStyle = '#ff3333';
@@ -268,7 +243,7 @@
         ctx.shadowBlur = 15;
         ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
         
-        // رسم العيون الحادة للمكعب
+        // العيون
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(-7, -5, 5, 5);
         ctx.fillRect(2, -5, 5, 5);
