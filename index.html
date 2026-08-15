@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Helixdrix 3D Exact</title>
+    <title>Helixdrix 3D - Advanced</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; font-family: 'Arial', sans-serif; margin: 0; padding: 0; }
@@ -11,7 +11,7 @@
         
         #game-canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        /* البار العلوي المطابق للفيديو */
+        /* واجهة المستخدم */
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 60px; background-color: #8375f2;
             display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 10;
@@ -27,7 +27,6 @@
             display: flex; justify-content: center; align-items: center; font-size: 18px; color: #8375f2;
         }
 
-        /* واجهة المستويات والنتيجة */
         #level-ui {
             position: absolute; top: 80px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none;
         }
@@ -39,14 +38,13 @@
         .diamond span { transform: rotate(-45deg); }
         .diamond.current { background-color: #ffca28; color: white; }
         .diamond.next { background-color: #a496ff; color: white; }
-        .progress-line { width: 120px; height: 3px; background-color: rgba(255,255,255,0.4); position: relative; }
+        .progress-line { width: 120px; height: 3px; background-color: rgba(255,255,255,0.4); }
 
         #main-score {
             font-size: 65px; font-weight: 900; color: white; margin-top: 10px;
             text-shadow: 2px 3px 5px rgba(0,0,0,0.2); transition: transform 0.1s ease;
         }
 
-        /* نصوص البداية والطاقة */
         #start-text {
             position: absolute; bottom: 30%; width: 100%; text-align: center;
             font-size: 26px; font-weight: 900; color: white; text-shadow: 1px 2px 4px rgba(0,0,0,0.3);
@@ -62,14 +60,13 @@
         }
         .energy-icon { background: white; color: #333; width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; }
 
-        /* شاشة الخسارة */
         #game-over-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 20; display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.7); z-index: 20; display: none; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;
         }
         #game-over-screen h1 { color: #ffca28; font-size: 45px; margin-bottom: 20px; text-shadow: 2px 2px #000; }
         .restart-btn {
-            background: #00e676; color: black; font-weight: bold; font-size: 20px; padding: 15px 40px; border-radius: 30px; border: none; cursor: pointer;
+            background: #00e676; color: black; font-weight: bold; font-size: 20px; padding: 15px 40px; border-radius: 30px; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,230,118,0.4);
         }
     </style>
 </head>
@@ -109,94 +106,128 @@
     <div id="game-canvas"></div>
 
 <script>
-    // إعداد المشهد والكاميرا
+    // --- نظام الصوت (Web Audio API) ---
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        if (type === 'break') {
+            // صوت تكسير زجاجي/ديناميكي
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'gameover') {
+            // صوت خسارة عميق
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+            osc.start(now); osc.stop(now + 0.5);
+        }
+    }
+
+    // --- إعداد الثري دي ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-canvas').appendChild(renderer.domElement);
 
-    // الإضاءة لتوضيح الألوان
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
     dirLight.position.set(10, 20, 10);
     scene.add(dirLight);
 
-    // بناء البرج (العمود الأبيض بتفاصيل المئذنة)
     const towerGroup = new THREE.Group();
     scene.add(towerGroup);
 
+    // البرج المركزي
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-    const centralPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 80, 32), pillarMat);
+    const centralPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 100, 32), pillarMat);
     towerGroup.add(centralPillar);
 
-    // إضافة تفاصيل معمارية للبرج (حلقات بارزة)
-    for(let i=0; i<25; i++) {
+    for(let i=0; i<30; i++) {
         let ring = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.4, 32), pillarMat);
-        ring.position.y = 10 - i * 3.5;
+        ring.position.y = 12 - i * 3.5;
         towerGroup.add(ring);
     }
-    // قبة البرج العلوية
-    let dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 32), pillarMat);
-    dome.position.y = 12.5;
-    towerGroup.add(dome);
 
-    // بناء المنصات (الأصفر الآمن والأسود الخطير)
+    // بناء المنصات (دائرة مغلقة بالكامل: أصفر + أسود)
     const platforms = [];
-    const radius = 3.8;
+    const radius = 4;
     const thickness = 0.5;
-    const gapSize = Math.PI / 2.2; // حجم الفتحة لمرور الكرة
-    const safeSize = Math.PI * 1.3; // حجم المنطقة الصفراء
     
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 20; i++) {
         let yPos = 8 - i * 3.5;
         let pGroup = new THREE.Group();
         pGroup.position.y = yPos;
-        
-        // تدوير عشوائي لكل منصة
         pGroup.rotation.y = Math.random() * Math.PI * 2;
 
-        // الجزء الأصفر (الآمن)
-        let safeGeo = new THREE.CylinderGeometry(radius, radius, thickness, 32, 1, false, gapSize, safeSize);
-        let safeMat = new THREE.MeshStandardMaterial({ color: 0xffca28 }); // لون أصفر فاقع مطابق للفيديو
+        let safeSize = Math.PI * (0.8 + Math.random() * 0.4); // حجم الأصفر
+        let dangerSize = (Math.PI * 2) - safeSize; // الباقي أسود
+
+        // الجزء الأصفر (ينكسر)
+        let safeGeo = new THREE.CylinderGeometry(radius, radius, thickness, 32, 1, false, 0, safeSize);
+        let safeMat = new THREE.MeshStandardMaterial({ color: 0xffca28 });
         let safeMesh = new THREE.Mesh(safeGeo, safeMat);
         pGroup.add(safeMesh);
 
-        // الجزء الأسود (الخطير)
-        let dangerGeo = new THREE.CylinderGeometry(radius, radius, thickness, 16, 1, false, gapSize + safeSize, (Math.PI * 2) - gapSize - safeSize);
-        let dangerMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); // لون أسود
+        // الجزء الأسود (يخسر)
+        let dangerGeo = new THREE.CylinderGeometry(radius, radius, thickness, 32, 1, false, safeSize, dangerSize);
+        let dangerMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
         let dangerMesh = new THREE.Mesh(dangerGeo, dangerMat);
         pGroup.add(dangerMesh);
 
-        platforms.push({ group: pGroup, y: yPos, passed: false });
+        platforms.push({ 
+            group: pGroup, 
+            y: yPos, 
+            broken: false,
+            safeMesh: safeMesh,
+            safeStart: 0,
+            safeEnd: safeSize
+        });
         towerGroup.add(pGroup);
     }
 
-    // الكرة الزرقاء (مضبوطة لتبدأ فوق أول منصة تماماً وتكون مرئية)
-    const ballGeo = new THREE.SphereGeometry(0.5, 32, 32);
-    const ballMat = new THREE.MeshStandardMaterial({ color: 0x2196f3, roughness: 0.2 }); // أزرق ساطع
-    const ball = new THREE.Mesh(ballGeo, ballMat);
+    // الكرة الزرقاء
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({ color: 0x2196f3, roughness: 0.2 }));
     ball.position.set(0, 10, 2.8);
     scene.add(ball);
 
-    // **إصلاح مكان الكاميرا لتركز على الكرة**
     camera.position.set(0, ball.position.y + 5, 13);
     camera.lookAt(0, ball.position.y - 1, 0);
 
-    // متغيرات اللعبة
+    // متغيرات اللعبة والفيزياء
     let gameState = 'START';
-    let score = 3607; // الرقم الذي طلبته
+    let score = 3607;
     let velocityY = 0;
-    const gravity = -0.018;
-    const bounceForce = 0.35;
+    const gravity = -0.015;
+    const bounceForce = 0.3; // قفزة خفيفة عند الكسر
     
     let targetRotation = 0;
     let isDragging = false;
     let previousX = 0;
+    let particles = []; // مصفوفة لتأثير التكسير
 
-    // التحكم بالسحب
     function startDrag(x) {
+        initAudio(); // تشغيل الصوت عند أول لمسة
         if (gameState === 'START') {
             gameState = 'PLAYING';
             document.getElementById('start-text').style.display = 'none';
@@ -218,73 +249,101 @@
     window.addEventListener('mousemove', e => onDrag(e.clientX));
     window.addEventListener('mouseup', stopDrag);
 
-    // تحديث النتيجة
     function addScore() {
-        score++;
+        score += 15;
         document.getElementById('top-score-text').innerText = score;
         const bigScore = document.getElementById('main-score');
         bigScore.innerText = score;
-        bigScore.style.transform = 'scale(1.2)';
+        bigScore.style.transform = 'scale(1.3)';
         setTimeout(() => bigScore.style.transform = 'scale(1)', 150);
     }
 
-    // حلقة الحركة والفيزياء
+    // دالة إنشاء تأثير تناثر القطع (Particles) عند الكسر
+    function createShatterEffect(yPos, rotationAngle) {
+        for(let i=0; i<8; i++) {
+            let pGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            let pMat = new THREE.MeshStandardMaterial({ color: 0xffca28 });
+            let particle = new THREE.Mesh(pGeo, pMat);
+            
+            // توزيع القطع حول مكان الكسر
+            let angle = rotationAngle + (Math.random() * 1.5 - 0.75);
+            particle.position.set(Math.sin(angle) * 3, yPos, Math.cos(angle) * 3);
+            
+            particle.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.2, 
+                Math.random() * 0.3, 
+                (Math.random() - 0.5) * 0.2
+            );
+            scene.add(particle);
+            particles.push(particle);
+        }
+    }
+
     function animate() {
         requestAnimationFrame(animate);
 
-        // دوران البرج
         towerGroup.rotation.y += (targetRotation - towerGroup.rotation.y) * 0.2;
+
+        // تحديث حركة القطع المتناثرة
+        for(let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.velocity.y += gravity * 1.5;
+            p.position.add(p.velocity);
+            p.rotation.x += 0.1;
+            p.rotation.y += 0.1;
+            if (p.position.y < ball.position.y - 15) {
+                scene.remove(p);
+                particles.splice(i, 1);
+            }
+        }
 
         if (gameState === 'PLAYING') {
             velocityY += gravity;
             ball.position.y += velocityY;
 
-            // الكاميرا تتبع الكرة بمرونة لكي لا تختفي أبداً
             let targetCamY = ball.position.y + 4;
             camera.position.y += (targetCamY - camera.position.y) * 0.1;
             camera.lookAt(0, ball.position.y - 2, 0);
 
-            // فيزياء الاصطدام مع المنصات
-            let activePlat = platforms.find(p => !p.passed && ball.position.y < p.y + 0.8);
-            if (activePlat) {
-                // إذا لمست الكرة سطح المنصة
-                if (ball.position.y <= activePlat.y + thickness/2 + 0.4 && velocityY < 0) {
-                    
-                    // حساب زاوية الكرة بالنسبة لدوران البرج ودوران المنصة
-                    let ballAngle = Math.PI / 2; // مكان الكرة الثابت على محور Z
-                    let totalAngle = (ballAngle - towerGroup.rotation.y - activePlat.group.rotation.y) % (Math.PI * 2);
-                    if (totalAngle < 0) totalAngle += Math.PI * 2;
+            // فحص الاصطدام
+            let activePlat = platforms.find(p => !p.broken && ball.position.y <= p.y + thickness/2 + 0.3 && ball.position.y >= p.y - thickness);
+            
+            if (activePlat && velocityY < 0) {
+                // حساب موقع الكرة بالنسبة لدوران البرج
+                let ballAngle = Math.PI / 2; // مكان الكرة الثابت
+                let relativeAngle = (ballAngle - towerGroup.rotation.y - activePlat.group.rotation.y) % (Math.PI * 2);
+                if (relativeAngle < 0) relativeAngle += Math.PI * 2;
 
-                    // فحص مكان السقوط
-                    if (totalAngle >= 0 && totalAngle <= gapSize) {
-                        // مرت من الفتحة بنجاح
-                        activePlat.passed = true;
-                        addScore();
-                    } else if (totalAngle > gapSize && totalAngle <= gapSize + safeSize) {
-                        // اصطدمت باللون الأصفر (قفزة)
-                        ball.position.y = activePlat.y + thickness/2 + 0.4;
-                        velocityY = bounceForce;
-                        // تأثير تمدد الكرة عند القفز
-                        ball.scale.set(1.3, 0.7, 1.3);
-                        setTimeout(() => ball.scale.set(1, 1, 1), 150);
-                    } else {
-                        // اصطدمت باللون الأسود (خسارة)
-                        gameState = 'GAMEOVER';
-                        document.getElementById('game-over-screen').style.display = 'flex';
-                    }
+                if (relativeAngle >= activePlat.safeStart && relativeAngle <= activePlat.safeEnd) {
+                    // لمس اللون الأصفر: تكسير وانطلاق للأسفل!
+                    activePlat.broken = true;
+                    activePlat.group.remove(activePlat.safeMesh); // إخفاء الجزء الأصفر
+                    
+                    playSound('break'); // تشغيل صوت الكسر
+                    addScore(); // إضافة النقاط
+                    createShatterEffect(activePlat.y, relativeAngle + towerGroup.rotation.y + activePlat.group.rotation.y); // تأثير تناثر القطع
+                    
+                    // قفزة صغيرة جداً لتعطي إحساساً بقوة الاصطدام ثم النزول
+                    velocityY = bounceForce;
+                    ball.scale.set(1.2, 0.8, 1.2);
+                    setTimeout(() => ball.scale.set(1, 1, 1), 100);
+                } else {
+                    // لمس اللون الأسود: خسارة
+                    playSound('gameover');
+                    gameState = 'GAMEOVER';
+                    document.getElementById('game-over-screen').style.display = 'flex';
                 }
             }
 
-            // إذا وصلت لأسفل البرج (فوز)
+            // فوز بالمستوى
             if (ball.position.y < platforms[platforms.length - 1].y - 3) {
-                location.reload(); // إعادة اللعبة للمرحلة القادمة
+                location.reload();
             }
         }
 
         renderer.render(scene, camera);
     }
     
-    // ضبط الأبعاد عند تدوير الجوال
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
