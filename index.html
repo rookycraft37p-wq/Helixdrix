@@ -3,303 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Helixdrix 3D</title>
-    <!-- استدعاء مكتبة Three.js لصنع الـ 3D الحقيقي -->
+    <title>Helixdrix 3D Exact</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; font-family: 'Arial', sans-serif; }
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            /* مطابقة لون الخلفية المتدرجة في الفيديو */
-            background: linear-gradient(180deg, #7b52fb 0%, #a285ff 40%, #c4aef2 100%);
-        }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; font-family: 'Arial', sans-serif; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(to bottom, #998cff, #7155ff); }
         
         #game-canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        /* واجهة المستخدم (UI) المطابقة للفيديو */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; align-items: center;
+        /* البار العلوي المطابق للفيديو */
+        #top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px; background-color: #8375f2;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        .top-bar {
-            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
-        }
-        
         .score-pill {
-            background: white; color: #333; padding: 8px 20px; border-radius: 20px;
-            font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: white; color: #333; padding: 6px 18px; border-radius: 20px;
+            font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px;
         }
-        .icons { display: flex; gap: 10px; }
-        .icon-btn {
-            width: 40px; height: 40px; background: white; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer;
+        .icons-right { display: flex; gap: 10px; }
+        .icon-circle {
+            width: 35px; height: 35px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 18px; color: #8375f2;
         }
 
-        .level-container {
-            margin-top: 10px; display: flex; align-items: center; gap: 15px;
+        /* واجهة المستويات والنتيجة */
+        #level-ui {
+            position: absolute; top: 80px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none;
         }
-        .level-badge {
-            width: 35px; height: 35px; background: white; color: #333; border-radius: 5px;
-            display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px;
-            transform: rotate(45deg);
+        .level-progress { display: flex; align-items: center; gap: 10px; }
+        .diamond {
+            width: 25px; height: 25px; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 14px; transform: rotate(45deg);
         }
-        .level-badge span { transform: rotate(-45deg); }
-        .level-badge.active { background: #ffcc00; color: white; }
-        .level-line { width: 150px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; }
+        .diamond span { transform: rotate(-45deg); }
+        .diamond.current { background-color: #ffca28; color: white; }
+        .diamond.next { background-color: #a496ff; color: white; }
+        .progress-line { width: 120px; height: 3px; background-color: rgba(255,255,255,0.4); position: relative; }
 
-        .big-score {
-            font-size: 80px; font-weight: 900; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            margin-top: 20px; transition: transform 0.1s;
+        #main-score {
+            font-size: 65px; font-weight: 900; color: white; margin-top: 10px;
+            text-shadow: 2px 3px 5px rgba(0,0,0,0.2); transition: transform 0.1s ease;
         }
 
+        /* نصوص البداية والطاقة */
         #start-text {
-            position: absolute; bottom: 25%; font-size: 28px; font-weight: 900; color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.4); letter-spacing: 2px;
-            display: flex; flex-direction: column; align-items: center; gap: 10px; animation: pulse 1s infinite alternate;
+            position: absolute; bottom: 30%; width: 100%; text-align: center;
+            font-size: 26px; font-weight: 900; color: white; text-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+            z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 15px; pointer-events: none;
         }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+        .hand-icon { font-size: 45px; animation: bounceHand 1s infinite alternate; }
+        @keyframes bounceHand { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
         #energy-bar {
-            position: absolute; bottom: 10%; background: rgba(0,0,0,0.3); padding: 10px 30px;
-            border-radius: 30px; color: #ffcc00; font-weight: bold; font-size: 18px;
-            display: flex; align-items: center; gap: 8px; border: 2px solid rgba(255,255,255,0.2);
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.2); padding: 10px 25px; border-radius: 30px;
+            color: white; font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px; z-index: 10;
         }
+        .energy-icon { background: white; color: #333; width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; }
 
-        #game-over {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);
-            display: none; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;
+        /* شاشة الخسارة */
+        #game-over-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 20; display: none; flex-direction: column; justify-content: center; align-items: center;
         }
-        #game-over h1 { color: #ffcc00; font-size: 50px; margin: 0; text-shadow: 2px 2px 0 #000; }
-        #game-over button {
-            margin-top: 30px; padding: 15px 40px; font-size: 24px; font-weight: bold;
-            background: #00e676; border: none; border-radius: 30px; color: white; cursor: pointer;
+        #game-over-screen h1 { color: #ffca28; font-size: 45px; margin-bottom: 20px; text-shadow: 2px 2px #000; }
+        .restart-btn {
+            background: #00e676; color: black; font-weight: bold; font-size: 20px; padding: 15px 40px; border-radius: 30px; border: none; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <div class="top-bar">
-            <div class="score-pill">🏆 <span id="top-score">3607</span></div>
-            <div class="icons">
-                <div class="icon-btn">🔊</div>
-                <div class="icon-btn">👤</div>
-            </div>
-        </div>
-
-        <div class="level-container">
-            <div class="level-badge active"><span>3</span></div>
-            <div class="level-line"></div>
-            <div class="level-badge"><span>4</span></div>
-        </div>
-
-        <div class="big-score" id="main-score">3607</div>
-
-        <div id="start-text">
-            TAP TO START
-            <span style="font-size: 40px;">👆</span>
-        </div>
-
-        <div id="energy-bar">
-            ⚡ ENERGY
+    <div id="top-bar">
+        <div class="score-pill">🏆 <span id="top-score-text">3607</span></div>
+        <div class="icons-right">
+            <div class="icon-circle">🔊</div>
+            <div class="icon-circle">👤</div>
         </div>
     </div>
 
-    <div id="game-over">
+    <div id="level-ui">
+        <div class="level-progress">
+            <div class="diamond current"><span>3</span></div>
+            <div class="progress-line"></div>
+            <div class="diamond next"><span>4</span></div>
+        </div>
+        <div id="main-score">3607</div>
+    </div>
+
+    <div id="start-text">
+        TAP TO START
+        <div class="hand-icon">👆🏻</div>
+    </div>
+
+    <div id="energy-bar">
+        <div class="energy-icon">⚡</div> ENERGY
+    </div>
+
+    <div id="game-over-screen">
         <h1>GAME OVER</h1>
-        <button onclick="location.reload()">RESTART</button>
+        <button class="restart-btn" onclick="location.reload()">🔄 RESTART</button>
     </div>
 
-    <!-- حاوية الـ 3D -->
     <div id="game-canvas"></div>
 
 <script>
-    // --- إعدادات Three.js الأساسية للـ 3D ---
+    // إعداد المشهد والكاميرا
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 5, 12);
-    camera.lookAt(0, 0, 0);
-
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
     document.getElementById('game-canvas').appendChild(renderer.domElement);
 
-    // --- الإضاءة ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // الإضاءة لتوضيح الألوان
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    dirLight.position.set(5, 10, 5);
-    dirLight.castShadow = true;
+    dirLight.position.set(10, 20, 10);
     scene.add(dirLight);
 
-    // --- بناء البرج والمنصات المطابقة للفيديو ---
+    // بناء البرج (العمود الأبيض بتفاصيل المئذنة)
     const towerGroup = new THREE.Group();
     scene.add(towerGroup);
 
-    // العمود الأبيض المركزي
-    const pillarGeo = new THREE.CylinderGeometry(1.5, 1.5, 50, 32);
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-    pillar.receiveShadow = true;
-    towerGroup.add(pillar);
+    const centralPillar = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 80, 32), pillarMat);
+    towerGroup.add(centralPillar);
 
-    // القبة/التاج أعلى البرج
-    const domeGeo = new THREE.SphereGeometry(1.8, 32, 32);
-    const dome = new THREE.Mesh(domeGeo, pillarMat);
-    dome.position.y = 25.5;
+    // إضافة تفاصيل معمارية للبرج (حلقات بارزة)
+    for(let i=0; i<25; i++) {
+        let ring = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.4, 32), pillarMat);
+        ring.position.y = 10 - i * 3.5;
+        towerGroup.add(ring);
+    }
+    // قبة البرج العلوية
+    let dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 32), pillarMat);
+    dome.position.y = 12.5;
     towerGroup.add(dome);
 
-    // إنشاء طبقات المنصات (أصفر وأسود)
+    // بناء المنصات (الأصفر الآمن والأسود الخطير)
     const platforms = [];
-    const levelCount = 12;
-    const platformRadius = 3.5;
-    const platformThickness = 0.6;
-
-    for (let i = 0; i < levelCount; i++) {
-        const levelGroup = new THREE.Group();
-        levelGroup.position.y = 15 - (i * 3.5); // المسافة بين الطبقات
+    const radius = 3.8;
+    const thickness = 0.5;
+    const gapSize = Math.PI / 2.2; // حجم الفتحة لمرور الكرة
+    const safeSize = Math.PI * 1.3; // حجم المنطقة الصفراء
+    
+    for (let i = 0; i < 15; i++) {
+        let yPos = 8 - i * 3.5;
+        let pGroup = new THREE.Group();
+        pGroup.position.y = yPos;
         
-        // زاوية الفراغ للعبور
-        const gapStart = Math.random() * Math.PI * 2;
-        const gapSize = Math.PI / 2; // ربع دائرة فراغ
+        // تدوير عشوائي لكل منصة
+        pGroup.rotation.y = Math.random() * Math.PI * 2;
 
         // الجزء الأصفر (الآمن)
-        const safeGeo = new THREE.CylinderGeometry(platformRadius, platformRadius, platformThickness, 32, 1, false, gapStart + gapSize, (Math.PI * 2) - gapSize - 0.5);
-        const safeMat = new THREE.MeshStandardMaterial({ color: 0xffb300, roughness: 0.3 }); // أصفر فاقع
-        const safeMesh = new THREE.Mesh(safeGeo, safeMat);
-        safeMesh.receiveShadow = true; safeMesh.castShadow = true;
-        safeMesh.userData = { type: 'safe' };
-        levelGroup.add(safeMesh);
+        let safeGeo = new THREE.CylinderGeometry(radius, radius, thickness, 32, 1, false, gapSize, safeSize);
+        let safeMat = new THREE.MeshStandardMaterial({ color: 0xffca28 }); // لون أصفر فاقع مطابق للفيديو
+        let safeMesh = new THREE.Mesh(safeGeo, safeMat);
+        pGroup.add(safeMesh);
 
         // الجزء الأسود (الخطير)
-        const dangerGeo = new THREE.CylinderGeometry(platformRadius, platformRadius, platformThickness, 16, 1, false, gapStart + Math.PI * 2 - 0.5, 0.5);
-        const dangerMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 }); // أسود
-        const dangerMesh = new THREE.Mesh(dangerGeo, dangerMat);
-        dangerMesh.receiveShadow = true; dangerMesh.castShadow = true;
-        dangerMesh.userData = { type: 'danger' };
-        levelGroup.add(dangerMesh);
+        let dangerGeo = new THREE.CylinderGeometry(radius, radius, thickness, 16, 1, false, gapSize + safeSize, (Math.PI * 2) - gapSize - safeSize);
+        let dangerMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); // لون أسود
+        let dangerMesh = new THREE.Mesh(dangerGeo, dangerMat);
+        pGroup.add(dangerMesh);
 
-        platforms.push({ group: levelGroup, y: levelGroup.position.y, passed: false });
-        towerGroup.add(levelGroup);
+        platforms.push({ group: pGroup, y: yPos, passed: false });
+        towerGroup.add(pGroup);
     }
 
-    // --- الشخصية (الكرة الزرقاء كما في الفيديو) ---
+    // الكرة الزرقاء (مضبوطة لتبدأ فوق أول منصة تماماً وتكون مرئية)
     const ballGeo = new THREE.SphereGeometry(0.5, 32, 32);
-    const ballMat = new THREE.MeshStandardMaterial({ color: 0x0066ff, roughness: 0.2 }); // أزرق ساطع
+    const ballMat = new THREE.MeshStandardMaterial({ color: 0x2196f3, roughness: 0.2 }); // أزرق ساطع
     const ball = new THREE.Mesh(ballGeo, ballMat);
-    ball.castShadow = true;
-    ball.position.set(0, 18, 2.5); // البداية أعلى البرج
+    ball.position.set(0, 10, 2.8);
     scene.add(ball);
 
-    // --- متغيرات اللعبة ---
+    // **إصلاح مكان الكاميرا لتركز على الكرة**
+    camera.position.set(0, ball.position.y + 5, 13);
+    camera.lookAt(0, ball.position.y - 1, 0);
+
+    // متغيرات اللعبة
     let gameState = 'START';
-    let score = 3607; // البداية مثل الفيديو
+    let score = 3607; // الرقم الذي طلبته
     let velocityY = 0;
-    const gravity = -0.015;
-    const bounceForce = 0.25;
+    const gravity = -0.018;
+    const bounceForce = 0.35;
     
     let targetRotation = 0;
     let isDragging = false;
     let previousX = 0;
 
-    // --- التحكم وتدوير البرج (باللمس أو الماوس) ---
-    function startDrag(clientX) {
+    // التحكم بالسحب
+    function startDrag(x) {
         if (gameState === 'START') {
             gameState = 'PLAYING';
             document.getElementById('start-text').style.display = 'none';
         }
-        isDragging = true;
-        previousX = clientX;
+        if (gameState !== 'PLAYING') return;
+        isDragging = true; previousX = x;
     }
-    function onDrag(clientX) {
+    function onDrag(x) {
         if (!isDragging) return;
-        const delta = clientX - previousX;
-        targetRotation += delta * 0.01;
-        previousX = clientX;
+        targetRotation += (x - previousX) * 0.01;
+        previousX = x;
     }
     function stopDrag() { isDragging = false; }
 
-    // دعم اللمس للجوال
     window.addEventListener('touchstart', e => startDrag(e.touches[0].clientX));
     window.addEventListener('touchmove', e => onDrag(e.touches[0].clientX));
     window.addEventListener('touchend', stopDrag);
-    // دعم الماوس للكمبيوتر
     window.addEventListener('mousedown', e => startDrag(e.clientX));
     window.addEventListener('mousemove', e => onDrag(e.clientX));
     window.addEventListener('mouseup', stopDrag);
 
     // تحديث النتيجة
-    function updateScore(points) {
-        score += points;
-        document.getElementById('top-score').innerText = score;
-        const mainScore = document.getElementById('main-score');
-        mainScore.innerText = score;
-        mainScore.style.transform = 'scale(1.2)';
-        setTimeout(() => mainScore.style.transform = 'scale(1)', 100);
+    function addScore() {
+        score++;
+        document.getElementById('top-score-text').innerText = score;
+        const bigScore = document.getElementById('main-score');
+        bigScore.innerText = score;
+        bigScore.style.transform = 'scale(1.2)';
+        setTimeout(() => bigScore.style.transform = 'scale(1)', 150);
     }
 
-    // --- حلقة اللعب (Game Loop) ---
+    // حلقة الحركة والفيزياء
     function animate() {
         requestAnimationFrame(animate);
 
-        // دوران البرج بنعومة
+        // دوران البرج
         towerGroup.rotation.y += (targetRotation - towerGroup.rotation.y) * 0.2;
 
         if (gameState === 'PLAYING') {
-            // فيزياء القفز
             velocityY += gravity;
             ball.position.y += velocityY;
 
-            // متابعة الكاميرا للكرة بنعومة
-            targetCameraY = ball.position.y + 3;
-            if (camera.position.y > targetCameraY) {
-                camera.position.y += (targetCameraY - camera.position.y) * 0.1;
+            // الكاميرا تتبع الكرة بمرونة لكي لا تختفي أبداً
+            let targetCamY = ball.position.y + 4;
+            camera.position.y += (targetCamY - camera.position.y) * 0.1;
+            camera.lookAt(0, ball.position.y - 2, 0);
+
+            // فيزياء الاصطدام مع المنصات
+            let activePlat = platforms.find(p => !p.passed && ball.position.y < p.y + 0.8);
+            if (activePlat) {
+                // إذا لمست الكرة سطح المنصة
+                if (ball.position.y <= activePlat.y + thickness/2 + 0.4 && velocityY < 0) {
+                    
+                    // حساب زاوية الكرة بالنسبة لدوران البرج ودوران المنصة
+                    let ballAngle = Math.PI / 2; // مكان الكرة الثابت على محور Z
+                    let totalAngle = (ballAngle - towerGroup.rotation.y - activePlat.group.rotation.y) % (Math.PI * 2);
+                    if (totalAngle < 0) totalAngle += Math.PI * 2;
+
+                    // فحص مكان السقوط
+                    if (totalAngle >= 0 && totalAngle <= gapSize) {
+                        // مرت من الفتحة بنجاح
+                        activePlat.passed = true;
+                        addScore();
+                    } else if (totalAngle > gapSize && totalAngle <= gapSize + safeSize) {
+                        // اصطدمت باللون الأصفر (قفزة)
+                        ball.position.y = activePlat.y + thickness/2 + 0.4;
+                        velocityY = bounceForce;
+                        // تأثير تمدد الكرة عند القفز
+                        ball.scale.set(1.3, 0.7, 1.3);
+                        setTimeout(() => ball.scale.set(1, 1, 1), 150);
+                    } else {
+                        // اصطدمت باللون الأسود (خسارة)
+                        gameState = 'GAMEOVER';
+                        document.getElementById('game-over-screen').style.display = 'flex';
+                    }
+                }
             }
 
-            // فحص الاصطدام مع المنصات
-            for (let i = 0; i < platforms.length; i++) {
-                let p = platforms[i];
-                // إذا تجاوزت الكرة المنصة من الفراغ
-                if (!p.passed && ball.position.y < p.y - 0.5) {
-                    p.passed = true;
-                    updateScore(10);
-                }
-
-                // إذا ارتطمت الكرة بالمنصة
-                if (ball.position.y > p.y && ball.position.y < p.y + platformThickness && velocityY < 0) {
-                    // حساب الزاوية لمعرفة هل سقطت في الفراغ أم على الأصفر أم الأسود
-                    let ballAngle = Math.atan2(ball.position.z, ball.position.x);
-                    let relativeAngle = (ballAngle - towerGroup.rotation.y) % (Math.PI * 2);
-                    if (relativeAngle < 0) relativeAngle += Math.PI * 2;
-
-                    // للتبسيط في هذا الكود القوي، نعتبر الارتطام بالمنصة يسبب قفزة مالم يكن Game Over
-                    // في الألعاب الكاملة يتم فحص لون القطعة المصطدم بها بناء على Raycaster
-                    
-                    // قفز
-                    ball.position.y = p.y + platformThickness;
-                    velocityY = bounceForce;
-                    
-                    // تأثير اسكواش بسيط (Squash effect)
-                    ball.scale.set(1.2, 0.8, 1.2);
-                    setTimeout(() => ball.scale.set(1, 1, 1), 100);
-                }
-            }
-
-            // نهاية اللعبة إذا سقطت تحت آخر منصة
-            if (ball.position.y < platforms[platforms.length - 1].y - 5) {
-                gameState = 'GAMEOVER';
-                document.getElementById('game-over').style.display = 'flex';
+            // إذا وصلت لأسفل البرج (فوز)
+            if (ball.position.y < platforms[platforms.length - 1].y - 3) {
+                location.reload(); // إعادة اللعبة للمرحلة القادمة
             }
         }
 
         renderer.render(scene, camera);
     }
-
-    // مطابقة حجم الشاشة عند تدوير الجوال
+    
+    // ضبط الأبعاد عند تدوير الجوال
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
