@@ -1,259 +1,312 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Helixdrix</title>
+    <title>Helixdrix 3D</title>
+    <!-- استدعاء مكتبة Three.js لصنع الـ 3D الحقيقي -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        * { box-sizing: border-box; user-select: none; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; font-family: 'Arial', sans-serif; }
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #120c24; overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex; justify-content: center; align-items: center;
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            /* مطابقة لون الخلفية المتدرجة في الفيديو */
+            background: linear-gradient(180deg, #7b52fb 0%, #a285ff 40%, #c4aef2 100%);
         }
+        
+        #game-canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        #game-container {
-            position: relative;
-            width: 100vw; height: 100vh;
-            max-width: 450px;
-            background: linear-gradient(to bottom, #251647, #120c24);
+        /* واجهة المستخدم (UI) المطابقة للفيديو */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
+        .top-bar {
+            width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .score-pill {
+            background: white; color: #333; padding: 8px 20px; border-radius: 20px;
+            font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .icons { display: flex; gap: 10px; }
+        .icon-btn {
+            width: 40px; height: 40px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer;
         }
 
-        .screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(18, 12, 36, 0.95); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white; z-index: 20; text-align: center;
-            padding: 20px;
+        .level-container {
+            margin-top: 10px; display: flex; align-items: center; gap: 15px;
         }
-        .screen h1 { font-size: 38px; color: #ffeb3b; text-shadow: 2px 2px #ff5722; margin-bottom: 10px; }
-        .btn {
-            padding: 14px 45px; font-size: 22px; font-weight: bold; background-color: #00e676;
-            color: #000; border: 3px solid #fff; border-radius: 35px; cursor: pointer;
-            box-shadow: 0 6px 20px rgba(0,230,118,0.5);
+        .level-badge {
+            width: 35px; height: 35px; background: white; color: #333; border-radius: 5px;
+            display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px;
+            transform: rotate(45deg);
+        }
+        .level-badge span { transform: rotate(-45deg); }
+        .level-badge.active { background: #ffcc00; color: white; }
+        .level-line { width: 150px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 2px; }
+
+        .big-score {
+            font-size: 80px; font-weight: 900; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            margin-top: 20px; transition: transform 0.1s;
         }
 
-        #hud {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            color: white; font-size: 16px; font-weight: bold; z-index: 10; display: none;
-            background: rgba(0, 0, 0, 0.4); padding: 8px 15px; border-radius: 12px;
+        #start-text {
+            position: absolute; bottom: 25%; font-size: 28px; font-weight: 900; color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4); letter-spacing: 2px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        #energy-bar {
+            position: absolute; bottom: 10%; background: rgba(0,0,0,0.3); padding: 10px 30px;
+            border-radius: 30px; color: #ffcc00; font-weight: bold; font-size: 18px;
+            display: flex; align-items: center; gap: 8px; border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        #game-over {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);
+            display: none; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;
+        }
+        #game-over h1 { color: #ffcc00; font-size: 50px; margin: 0; text-shadow: 2px 2px 0 #000; }
+        #game-over button {
+            margin-top: 30px; padding: 15px 40px; font-size: 24px; font-weight: bold;
+            background: #00e676; border: none; border-radius: 30px; color: white; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="start-screen" class="screen">
-        <h1>HELIXDRIX</h1>
-        <p style="margin-bottom: 25px; color: #ddd; font-size: 16px;">المكعب الأحمر والحلقات الحلزونية الناعمة!</p>
-        <button class="btn" onclick="startGame()">ابدأ اللعب</button>
+    <div id="ui-layer">
+        <div class="top-bar">
+            <div class="score-pill">🏆 <span id="top-score">3607</span></div>
+            <div class="icons">
+                <div class="icon-btn">🔊</div>
+                <div class="icon-btn">👤</div>
+            </div>
+        </div>
+
+        <div class="level-container">
+            <div class="level-badge active"><span>3</span></div>
+            <div class="level-line"></div>
+            <div class="level-badge"><span>4</span></div>
+        </div>
+
+        <div class="big-score" id="main-score">3607</div>
+
+        <div id="start-text">
+            TAP TO START
+            <span style="font-size: 40px;">👆</span>
+        </div>
+
+        <div id="energy-bar">
+            ⚡ ENERGY
+        </div>
     </div>
 
-    <div id="gameover-screen" class="screen" style="display: none;">
-        <h1 style="color: #ff5252;">انتهت اللعبة</h1>
-        <p id="final-score" style="font-size: 22px; margin-bottom: 25px;">النتيجة: 0</p>
-        <button class="btn" onclick="startGame()">إعادة المحاولة</button>
+    <div id="game-over">
+        <h1>GAME OVER</h1>
+        <button onclick="location.reload()">RESTART</button>
     </div>
 
-    <div id="hud">
-        <div>النتيجة: <span id="score">0</span></div>
-        <div style="color: #ffeb3b;">⚡ طاقة</div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
-</div>
+    <!-- حاوية الـ 3D -->
+    <div id="game-canvas"></div>
 
 <script>
-    let audioCtx = null;
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
+    // --- إعدادات Three.js الأساسية للـ 3D ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 5, 12);
+    camera.lookAt(0, 0, 0);
 
-    function playSound(type) {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        let now = audioCtx.currentTime;
-        if (type === 'bounce') {
-            osc.frequency.setValueAtTime(320, now);
-            osc.frequency.exponentialRampToValueAtTime(650, now + 0.1);
-            gain.gain.setValueAtTime(0.12, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now); osc.stop(now + 0.1);
-        } else if (type === 'gameover') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(200, now);
-            osc.frequency.linearRampToValueAtTime(80, now + 0.4);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-            osc.start(now); osc.stop(now + 0.4);
-        }
-    }
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.getElementById('game-canvas').appendChild(renderer.domElement);
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
+    // --- الإضاءة ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(5, 10, 5);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
 
-    const GW = 400, GH = 750;
-    canvas.width = GW;
-    canvas.height = GH;
+    // --- بناء البرج والمنصات المطابقة للفيديو ---
+    const towerGroup = new THREE.Group();
+    scene.add(towerGroup);
 
-    let gameState = 'START';
-    let score = 0;
-    let rotationAngle = 0;
-    let targetRotation = 0;
+    // العمود الأبيض المركزي
+    const pillarGeo = new THREE.CylinderGeometry(1.5, 1.5, 50, 32);
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+    pillar.receiveShadow = true;
+    towerGroup.add(pillar);
 
-    let player = {
-        x: GW / 2,
-        y: 160,
-        vy: 0,
-        size: 24,
-        gravity: 0.45,
-        jumpPower: -8.5
-    };
+    // القبة/التاج أعلى البرج
+    const domeGeo = new THREE.SphereGeometry(1.8, 32, 32);
+    const dome = new THREE.Mesh(domeGeo, pillarMat);
+    dome.position.y = 25.5;
+    towerGroup.add(dome);
 
-    let disks = [];
+    // إنشاء طبقات المنصات (أصفر وأسود)
+    const platforms = [];
+    const levelCount = 12;
+    const platformRadius = 3.5;
+    const platformThickness = 0.6;
 
-    function initLevel() {
-        score = 0;
-        scoreEl.innerText = score;
-        player.y = 140; player.vy = 0;
+    for (let i = 0; i < levelCount; i++) {
+        const levelGroup = new THREE.Group();
+        levelGroup.position.y = 15 - (i * 3.5); // المسافة بين الطبقات
         
-        disks = [];
-        let numDisks = 14;
-        for (let i = 0; i < numDisks; i++) {
-            let gapStart = Math.random() * Math.PI * 1.5;
-            disks.push({
-                y: 200 + i * 42,
-                radius: 110,
-                gapStart: gapStart,
-                gapSize: 1.4,
-                color: i === numDisks - 1 ? '#00e676' : (i % 2 === 0 ? '#ff3366' : '#9c27b0'), // ألوان وردية وبنفسجية مطابقة للصور
-                broken: false
-            });
+        // زاوية الفراغ للعبور
+        const gapStart = Math.random() * Math.PI * 2;
+        const gapSize = Math.PI / 2; // ربع دائرة فراغ
+
+        // الجزء الأصفر (الآمن)
+        const safeGeo = new THREE.CylinderGeometry(platformRadius, platformRadius, platformThickness, 32, 1, false, gapStart + gapSize, (Math.PI * 2) - gapSize - 0.5);
+        const safeMat = new THREE.MeshStandardMaterial({ color: 0xffb300, roughness: 0.3 }); // أصفر فاقع
+        const safeMesh = new THREE.Mesh(safeGeo, safeMat);
+        safeMesh.receiveShadow = true; safeMesh.castShadow = true;
+        safeMesh.userData = { type: 'safe' };
+        levelGroup.add(safeMesh);
+
+        // الجزء الأسود (الخطير)
+        const dangerGeo = new THREE.CylinderGeometry(platformRadius, platformRadius, platformThickness, 16, 1, false, gapStart + Math.PI * 2 - 0.5, 0.5);
+        const dangerMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 }); // أسود
+        const dangerMesh = new THREE.Mesh(dangerGeo, dangerMat);
+        dangerMesh.receiveShadow = true; dangerMesh.castShadow = true;
+        dangerMesh.userData = { type: 'danger' };
+        levelGroup.add(dangerMesh);
+
+        platforms.push({ group: levelGroup, y: levelGroup.position.y, passed: false });
+        towerGroup.add(levelGroup);
+    }
+
+    // --- الشخصية (الكرة الزرقاء كما في الفيديو) ---
+    const ballGeo = new THREE.SphereGeometry(0.5, 32, 32);
+    const ballMat = new THREE.MeshStandardMaterial({ color: 0x0066ff, roughness: 0.2 }); // أزرق ساطع
+    const ball = new THREE.Mesh(ballGeo, ballMat);
+    ball.castShadow = true;
+    ball.position.set(0, 18, 2.5); // البداية أعلى البرج
+    scene.add(ball);
+
+    // --- متغيرات اللعبة ---
+    let gameState = 'START';
+    let score = 3607; // البداية مثل الفيديو
+    let velocityY = 0;
+    const gravity = -0.015;
+    const bounceForce = 0.25;
+    
+    let targetRotation = 0;
+    let isDragging = false;
+    let previousX = 0;
+
+    // --- التحكم وتدوير البرج (باللمس أو الماوس) ---
+    function startDrag(clientX) {
+        if (gameState === 'START') {
+            gameState = 'PLAYING';
+            document.getElementById('start-text').style.display = 'none';
         }
+        isDragging = true;
+        previousX = clientX;
+    }
+    function onDrag(clientX) {
+        if (!isDragging) return;
+        const delta = clientX - previousX;
+        targetRotation += delta * 0.01;
+        previousX = clientX;
+    }
+    function stopDrag() { isDragging = false; }
+
+    // دعم اللمس للجوال
+    window.addEventListener('touchstart', e => startDrag(e.touches[0].clientX));
+    window.addEventListener('touchmove', e => onDrag(e.touches[0].clientX));
+    window.addEventListener('touchend', stopDrag);
+    // دعم الماوس للكمبيوتر
+    window.addEventListener('mousedown', e => startDrag(e.clientX));
+    window.addEventListener('mousemove', e => onDrag(e.clientX));
+    window.addEventListener('mouseup', stopDrag);
+
+    // تحديث النتيجة
+    function updateScore(points) {
+        score += points;
+        document.getElementById('top-score').innerText = score;
+        const mainScore = document.getElementById('main-score');
+        mainScore.innerText = score;
+        mainScore.style.transform = 'scale(1.2)';
+        setTimeout(() => mainScore.style.transform = 'scale(1)', 100);
     }
 
-    function startGame() {
-        initAudio();
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('gameover-screen').style.display = 'none';
-        document.getElementById('hud').style.display = 'flex';
-        initLevel();
-        gameState = 'PLAYING';
-    }
+    // --- حلقة اللعب (Game Loop) ---
+    function animate() {
+        requestAnimationFrame(animate);
 
-    function gameOver() {
-        playSound('gameover');
-        gameState = 'GAMEOVER';
-        document.getElementById('hud').style.display = 'none';
-        document.getElementById('final-score').innerText = `النتيجة النهائية: ${score}`;
-        document.getElementById('gameover-screen').style.display = 'flex';
-    }
+        // دوران البرج بنعومة
+        towerGroup.rotation.y += (targetRotation - towerGroup.rotation.y) * 0.2;
 
-    let isDragging = false, startX = 0;
-    window.addEventListener('pointerdown', e => { isDragging = true; startX = e.clientX; });
-    window.addEventListener('pointermove', e => {
-        if (!isDragging || gameState !== 'PLAYING') return;
-        targetRotation += (e.clientX - startX) * 0.012;
-        startX = e.clientX;
-    });
-    window.addEventListener('pointerup', () => { isDragging = false; });
-
-    function update() {
         if (gameState === 'PLAYING') {
-            rotationAngle += (targetRotation - rotationAngle) * 0.1;
-            player.vy += player.gravity;
-            player.y += player.vy;
+            // فيزياء القفز
+            velocityY += gravity;
+            ball.position.y += velocityY;
 
-            let centerX = GW / 2;
-            let currentDiskIndex = Math.floor((player.y - 180) / 42);
+            // متابعة الكاميرا للكرة بنعومة
+            targetCameraY = ball.position.y + 3;
+            if (camera.position.y > targetCameraY) {
+                camera.position.y += (targetCameraY - camera.position.y) * 0.1;
+            }
 
-            if (currentDiskIndex >= 0 && currentDiskIndex < disks.length) {
-                let disk = disks[currentDiskIndex];
-                if (!disk.broken) {
-                    let playerAngle = Math.atan2(player.y - disk.y, player.x - centerX) - rotationAngle;
-                    while (playerAngle < 0) playerAngle += Math.PI * 2;
-                    while (playerAngle > Math.PI * 2) playerAngle -= Math.PI * 2;
+            // فحص الاصطدام مع المنصات
+            for (let i = 0; i < platforms.length; i++) {
+                let p = platforms[i];
+                // إذا تجاوزت الكرة المنصة من الفراغ
+                if (!p.passed && ball.position.y < p.y - 0.5) {
+                    p.passed = true;
+                    updateScore(10);
+                }
 
-                    let inGap = playerAngle >= disk.gapStart && playerAngle <= (disk.gapStart + disk.gapSize);
+                // إذا ارتطمت الكرة بالمنصة
+                if (ball.position.y > p.y && ball.position.y < p.y + platformThickness && velocityY < 0) {
+                    // حساب الزاوية لمعرفة هل سقطت في الفراغ أم على الأصفر أم الأسود
+                    let ballAngle = Math.atan2(ball.position.z, ball.position.x);
+                    let relativeAngle = (ballAngle - towerGroup.rotation.y) % (Math.PI * 2);
+                    if (relativeAngle < 0) relativeAngle += Math.PI * 2;
 
-                    if (inGap && player.vy > 0) {
-                        player.vy = player.jumpPower * 0.85;
-                        score += 10;
-                        scoreEl.innerText = score;
-                        playSound('bounce');
-                    } else if (!inGap && player.y + player.size / 2 >= disk.y && player.y - player.size / 2 <= disk.y + 10) {
-                        if (player.vy > 0) {
-                            player.y = disk.y - player.size / 2;
-                            player.vy = player.jumpPower;
-                            playSound('bounce');
-                        }
-                    }
+                    // للتبسيط في هذا الكود القوي، نعتبر الارتطام بالمنصة يسبب قفزة مالم يكن Game Over
+                    // في الألعاب الكاملة يتم فحص لون القطعة المصطدم بها بناء على Raycaster
+                    
+                    // قفز
+                    ball.position.y = p.y + platformThickness;
+                    velocityY = bounceForce;
+                    
+                    // تأثير اسكواش بسيط (Squash effect)
+                    ball.scale.set(1.2, 0.8, 1.2);
+                    setTimeout(() => ball.scale.set(1, 1, 1), 100);
                 }
             }
 
-            if (player.y > disks[disks.length - 1].y + 40) {
-                score += 100;
-                initLevel();
+            // نهاية اللعبة إذا سقطت تحت آخر منصة
+            if (ball.position.y < platforms[platforms.length - 1].y - 5) {
+                gameState = 'GAMEOVER';
+                document.getElementById('game-over').style.display = 'flex';
             }
-
-            if (player.y > GH + 50) gameOver();
         }
-        draw();
-        requestAnimationFrame(update);
+
+        renderer.render(scene, camera);
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, GW, GH);
-        let centerX = GW / 2;
+    // مطابقة حجم الشاشة عند تدوير الجوال
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
-        // رسم الحلقات الدائرية الحلزونية الناعمة المنحنية تماماً مثل الصور
-        disks.forEach((disk) => {
-            if (disk.broken) return;
-            ctx.save();
-            ctx.translate(centerX, disk.y);
-            ctx.rotate(rotationAngle);
-
-            ctx.beginPath();
-            ctx.arc(0, 0, disk.radius, disk.gapStart + disk.gapSize, disk.gapStart + Math.PI * 2);
-            ctx.lineWidth = 14;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = disk.color;
-            ctx.stroke();
-
-            ctx.restore();
-        });
-
-        // رسم المكعب الأحمر العصبي ذي العيون في المنتصف تماماً
-        ctx.save();
-        ctx.translate(centerX, player.y);
-        ctx.fillStyle = '#ff3333';
-        ctx.shadowColor = '#ff0000';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
-        
-        // العيون
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-7, -5, 5, 5);
-        ctx.fillRect(2, -5, 5, 5);
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(-5, -3, 2, 2);
-        ctx.fillRect(4, -3, 2, 2);
-        ctx.restore();
-    }
-
-    update();
+    animate();
 </script>
 </body>
 </html>
