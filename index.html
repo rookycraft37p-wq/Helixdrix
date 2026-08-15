@@ -3,74 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Helix Smash - Tower Drop</title>
+    <title>Helixdrix</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #1a1a2e; overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
             touch-action: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        #rotate-device {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #fff; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-size: 24px;
-        }
-        @media (orientation: landscape) { #rotate-device { display: none; } }
 
         #game-container {
-            position: relative; width: 100vw; height: 100vh;
-            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            max-height: 850px;
+            display: flex; flex-direction: column; align-items: center;
+            background: linear-gradient(to bottom, #1b1b3a, #0f0c1b);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
-        canvas { display: block; background: linear-gradient(to bottom, #2b1055, #7597de); }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.75); display: flex; flex-direction: column;
+            background: rgba(15, 12, 27, 0.9); display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; z-index: 20; text-align: center;
         }
-        .screen h1 { font-size: 38px; color: #ffeb3b; text-shadow: 2px 2px #ff5722; margin-bottom: 10px; }
+        .screen h1 { font-size: 36px; color: #ffeb3b; text-shadow: 2px 2px #ff5722; margin-bottom: 10px; }
         .btn {
-            padding: 12px 35px; font-size: 20px; font-weight: bold; background-color: #00e676;
+            padding: 14px 40px; font-size: 20px; font-weight: bold; background-color: #00e676;
             color: #000; border: 3px solid #fff; border-radius: 30px; cursor: pointer;
             box-shadow: 0 5px 15px rgba(0,230,118,0.4);
         }
+
         #hud {
-            position: absolute; top: 15px; left: 20px; right: 20px;
+            position: absolute; top: 15px; left: 15px; right: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            color: white; font-size: 22px; font-weight: bold; z-index: 10; display: none;
+            color: white; font-size: 18px; font-weight: bold; z-index: 10; display: none;
+            background: rgba(0, 0, 0, 0.4); padding: 8px 15px; border-radius: 12px;
         }
         .energy-bar-container {
-            width: 150px; height: 16px; background: rgba(255,255,255,0.2);
-            border: 2px solid #fff; border-radius: 10px; overflow: hidden;
+            width: 100px; height: 12px; background: rgba(255,255,255,0.2);
+            border: 2px solid #fff; border-radius: 8px; overflow: hidden; display: inline-block; vertical-align: middle;
         }
         #energy-fill { width: 0%; height: 100%; background: #ffeb3b; transition: width 0.1s; }
     </style>
 </head>
 <body>
 
-<div id="rotate-device">
-    <span>🔄</span>
-    <p>الرجاء تدوير الهاتف بالعرض<br>لبدء اللعبة!</p>
-</div>
-
 <div id="game-container">
     <div id="start-screen" class="screen">
-        <h1>HELIX TOWER SMASH</h1>
-        <p style="margin-bottom: 20px;">حطم الحلقات واصل للأسفل بحذر!</p>
+        <h1>HELIXDRIX</h1>
+        <p style="margin-bottom: 25px; font-size: 16px; color: #ccc;">وجه المكعب الأحمر وحطم الحلقات للأسفل!</p>
         <button class="btn" onclick="startGame()">ابدأ اللعب</button>
     </div>
 
     <div id="gameover-screen" class="screen" style="display: none;">
         <h1 style="color: #ff5252;">انتهت اللعبة!</h1>
-        <p id="final-score" style="font-size: 22px;">النتيجة: 0</p>
+        <p id="final-score" style="font-size: 20px; margin-bottom: 20px;">النتيجة: 0</p>
         <button class="btn" onclick="startGame()">إعادة المحاولة</button>
     </div>
 
     <div id="hud">
         <div>النتيجة: <span id="score">0</span></div>
-        <div>الطاقة الخارقة:</div>
-        <div class="energy-bar-container"><div id="energy-fill"></div></div>
+        <div>الطاقة: <div class="energy-bar-container"><div id="energy-fill"></div></div></div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -83,7 +85,6 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // مؤثرات صوتية تفاعلية بالمتصفح
     function playSound(type) {
         if (!audioCtx) return;
         let osc = audioCtx.createOscillator();
@@ -119,15 +120,9 @@
     const scoreEl = document.getElementById('score');
     const energyFill = document.getElementById('energy-fill');
 
-    const GW = 800, GH = 450;
-    function resize() {
-        const scale = Math.min(window.innerWidth / GW, window.innerHeight / GH);
-        canvas.width = GW; canvas.height = GH;
-        canvas.style.width = `${GW * scale}px`;
-        canvas.style.height = `${GH * scale}px`;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+    const GW = 400, GH = 700;
+    canvas.width = GW;
+    canvas.height = GH;
 
     let gameState = 'START';
     let score = 0;
@@ -135,13 +130,13 @@
     let rotationAngle = 0;
     let targetRotation = 0;
 
-    let ball = {
-        x: GW / 2 + 100,
-        y: 100,
+    let player = {
+        x: GW / 2,
+        y: 120,
         vy: 0,
-        radius: 12,
-        gravity: 0.5,
-        jumpPower: -9
+        size: 20,
+        gravity: 0.45,
+        jumpPower: -8.5
     };
 
     let disks = [];
@@ -150,19 +145,17 @@
         score = 0; energy = 0;
         scoreEl.innerText = score;
         energyFill.style.width = '0%';
-        ball.y = 80; ball.vy = 0;
+        player.y = 100; player.vy = 0;
         
         disks = [];
-        let numDisks = 12;
+        let numDisks = 13;
         for (let i = 0; i < numDisks; i++) {
-            let gaps = [];
-            // تحديد أماكن الفتحات والفراغات في كل حلقة
             let gapStart = Math.random() * Math.PI * 1.5;
             disks.push({
-                y: 150 + i * 45,
-                radius: 90,
+                y: 180 + i * 42,
+                radius: 100,
                 gapStart: gapStart,
-                gapSize: 1.2,
+                gapSize: 1.3,
                 color: i === numDisks - 1 ? '#00e676' : (i % 2 === 0 ? '#ff4081' : '#7c4dff'),
                 broken: false
             });
@@ -186,7 +179,7 @@
         document.getElementById('gameover-screen').style.display = 'flex';
     }
 
-    // التحكم باللمس أو الماوس لتدوير البرج
+    // تدوير البرج عبر السحب بالإصبع
     let isDragging = false;
     let startX = 0;
 
@@ -197,107 +190,11 @@
     window.addEventListener('pointermove', e => {
         if (!isDragging || gameState !== 'PLAYING') return;
         let deltaX = e.clientX - startX;
-        targetRotation += deltaX * 0.008;
+        targetRotation += deltaX * 0.01;
         startX = e.clientX;
     });
     window.addEventListener('pointerup', () => { isDragging = false; });
 
     function update() {
         if (gameState === 'PLAYING') {
-            // سلاسة الدوران
-            rotationAngle += (targetRotation - rotationAngle) * 0.1;
-
-            // حركة الكرة وعملية السقوط والارتداد
-            ball.vy += ball.gravity;
-            ball.y += ball.vy;
-
-            let centerX = GW / 2;
-            let currentDiskIndex = Math.floor((ball.y - 135) / 45);
-
-            if (currentDiskIndex >= 0 && currentDiskIndex < disks.length) {
-                let disk = disks[currentDiskIndex];
-                if (!disk.broken) {
-                    // حساب زاوية موقع الكرة بالنسبة لمركز البرج
-                    let ballAngle = Math.atan2(ball.y - disk.y, ball.x - centerX) - rotationAngle;
-                    while (ballAngle < 0) ballAngle += Math.PI * 2;
-                    while (ballAngle > Math.PI * 2) ballAngle -= Math.PI * 2;
-
-                    let inGap = ballAngle >= disk.gapStart && ballAngle <= (disk.gapStart + disk.gapSize);
-
-                    if (inGap && ball.vy > 0) {
-                        // الكرة تمر عبر الفتحة وتنتقل للحلقة التالية
-                        ball.vy = ball.jumpPower * 0.8;
-                        score += 10;
-                        scoreEl.innerText = score;
-                        energy = Math.min(100, energy + 25);
-                        energyFill.style.width = energy + '%';
-                        playSound('bounce');
-                    } else if (!inGap && ball.y + ball.radius >= disk.y && ball.y - ball.radius <= disk.y + 10) {
-                        if (energy >= 100) {
-                            // وضع الطاقة الخارقة (تحطيم الحلقة بالكامل مثل الفيديو)
-                            disk.broken = true;
-                            energy = 0;
-                            energyFill.style.width = '0%';
-                            ball.vy = ball.jumpPower;
-                            score += 50;
-                            scoreEl.innerText = score;
-                            playSound('break');
-                        } else {
-                            // اصطدام عادي والارتداد لأعلى
-                            if (ball.vy > 0) {
-                                ball.y = disk.y - ball.radius;
-                                ball.vy = ball.jumpPower;
-                                playSound('bounce');
-                            }
-                        }
-                    }
-                }
-            }
-
-            // الفوز عند الوصول للنهاية
-            if (ball.y > disks[disks.length - 1].y + 40) {
-                score += 200;
-                initLevel(); // بدء مرحلة جديدة تصاعدية
-            }
-
-            if (ball.y > GH + 50) gameOver();
-        }
-        draw();
-        requestAnimationFrame(update);
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, GW, GH);
-        let centerX = GW / 2;
-
-        // رسم البرج والحلقات بشكل أفقي وعصري
-        disks.forEach((disk, index) => {
-            if (disk.broken) return;
-            ctx.save();
-            ctx.translate(centerX, disk.y);
-            ctx.rotate(rotationAngle);
-
-            // رسم الحلقة كدائرة مفرغة مع ترك الفتحة فارغة
-            ctx.beginPath();
-            ctx.arc(0, 0, disk.radius, disk.gapStart + disk.gapSize, disk.gapStart + Math.PI * 2);
-            ctx.lineWidth = 14;
-            ctx.strokeStyle = disk.color;
-            ctx.stroke();
-
-            ctx.restore();
-        });
-
-        // رسم الكرة المضيئة
-        ctx.beginPath();
-        ctx.arc(centerX, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = energy >= 100 ? '#ffeb3b' : '#00e676';
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 15;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-
-    update();
-</script>
-</body>
-</html>
+            rotationAngle += (target
