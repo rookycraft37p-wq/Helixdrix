@@ -69,7 +69,6 @@
             font-size: 1.1rem;
         }
 
-        /* تنسيق العد التنازلي وزر التحميل */
         .countdown-text {
             font-size: 1.1rem;
             color: #ffa500;
@@ -118,16 +117,14 @@
 
     <div class="container">
         <div class="mod-card">
-            <h2 class="mod-title">مود القرويين المتحدثين (Talking Villagers)</h2>
+            <h2 class="mod-title">مود القرويين المتكلمين</h2>
             <p class="mod-description">
                 يضيف هذا المود أصواتاً وتفاعلات واقعية للقرويين في اللعبة لجعل تجربتك في ماين كرافت أكثر حيوية ومتعة.
             </p>
             
-            <!-- نص العد التنازلي -->
             <div id="countdown-timer" class="countdown-text">⏳ يرجى الانتظار <span id="timer">10</span> ثوانٍ لظهور رابط التحميل...</div>
             
-            <!-- زر التحميل موجه لرابط درايف المباشر الخاص بك وسيظهر بعد انتهاء العد -->
-            <a id="download-btn" href="https://drive.google.com/uc?export=download&id=1m6Da136ikZauDopvClfl_FmdRLEaKZMh" class="download-btn">
+            <a id="download-btn" href="https://files.catbox.moe/d246za.zip" download="talking-villagers.mcaddon" class="download-btn">
                 📥 تحميل المود الآن
             </a>
         </div>
@@ -138,7 +135,7 @@
     </footer>
 
     <script>
-        // كود العد التنازلي لمدة 10 ثوانٍ
+        // كود العد التنازلي من 10 إلى 0
         let timeLeft = 10;
         const timerElement = document.getElementById('timer');
         const countdownContainer = document.getElementById('countdown-timer');
