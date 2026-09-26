@@ -45,8 +45,7 @@
         .mod-card {
             background-color: #1e1e1e;
             border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 25px;
+            padding: 30px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             text-align: center;
             border: 1px solid #333;
@@ -59,33 +58,46 @@
         }
 
         .mod-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: #ffffff;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .mod-description {
             color: #cccccc;
             margin-bottom: 20px;
-            font-size: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* تنسيق العد التنازلي وزر التحميل */
+        .countdown-text {
+            font-size: 1.1rem;
+            color: #ffa500;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
 
         .download-btn {
-            display: inline-block;
+            display: none; /* مخفي لحين انتهاء العد التنازلي */
             background-color: #4CAF50;
             color: #ffffff;
-            padding: 12px 25px;
-            font-size: 1.1rem;
+            padding: 15px 30px;
+            font-size: 1.2rem;
             font-weight: bold;
             text-decoration: none;
             border-radius: 8px;
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+            margin: 0 auto;
         }
 
         .download-btn:hover {
             background-color: #45a049;
             transform: scale(1.05);
+        }
+
+        .download-btn:active {
+            transform: scale(0.95);
         }
 
         footer {
@@ -105,21 +117,18 @@
     </header>
 
     <div class="container">
-        <!-- المود الأول -->
         <div class="mod-card">
-            <h2 class="mod-title">مود ماين كرافت (الأول)</h2>
-            <p class="mod-description">اضغط بالأسفل لتحميل المود الأول برابط مباشر وسريع.</p>
-            <a href="https://drive.google.com/uc?export=download&id=1m6Da136ikZauDopvClfl_FmdRLEaKZMh" class="download-btn">
-                📥 تحميل المود الأول
-            </a>
-        </div>
-
-        <!-- المود الثاني -->
-        <div class="mod-card">
-            <h2 class="mod-title">مود ماين كرافت (الثاني)</h2>
-            <p class="mod-description">اضغط بالأسفل لتحميل المود الثاني برابط مباشر وسريع.</p>
-            <a href="https://drive.google.com/uc?export=download&id=1d36LXXDgACPtRT3p54MJrW4wFD51IOl4" class="download-btn">
-                📥 تحميل المود الثاني
+            <h2 class="mod-title">مود القرويين المتحدثين (Talking Villagers)</h2>
+            <p class="mod-description">
+                يضيف هذا المود أصواتاً وتفاعلات واقعية للقرويين في اللعبة لجعل تجربتك في ماين كرافت أكثر حيوية ومتعة.
+            </p>
+            
+            <!-- نص العد التنازلي -->
+            <div id="countdown-timer" class="countdown-text">⏳ يرجى الانتظار <span id="timer">10</span> ثوانٍ لظهور رابط التحميل...</div>
+            
+            <!-- زر التحميل موجه لرابط درايف المباشر الخاص بك وسيظهر بعد انتهاء العد -->
+            <a id="download-btn" href="https://drive.google.com/uc?export=download&id=1m6Da136ikZauDopvClfl_FmdRLEaKZMh" class="download-btn">
+                📥 تحميل المود الآن
             </a>
         </div>
     </div>
@@ -127,6 +136,25 @@
     <footer>
         <p>جميع الحقوق محفوظة &copy; 2026 - DrixMods</p>
     </footer>
+
+    <script>
+        // كود العد التنازلي لمدة 10 ثوانٍ
+        let timeLeft = 10;
+        const timerElement = document.getElementById('timer');
+        const countdownContainer = document.getElementById('countdown-timer');
+        const downloadBtn = document.getElementById('download-btn');
+
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                countdownContainer.style.display = 'none'; // إخفاء جملة الانتظار
+                downloadBtn.style.display = 'inline-block'; // إظهار زر التحميل الأخضر
+            }
+        }, 1000);
+    </script>
 
 </body>
 </html>
