@@ -1,92 +1,89 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="حمّل مود القرويين المتكلمين لماينكرافت.">
-    <title>تحميل مود القرويين المتكلمين | الاحترافي</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Cairo', sans-serif;
-        }
-        body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            padding: 24px 0;
-        }
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 600px;
-            width: 90%;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #ff7f00, #ff0000, #ffff00);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        p {
-            font-size: 1.1rem;
-            color: #ccc;
-            margin-bottom: 30px;
-            line-height: 1.8;
-        }
-        .download-btn {
-            display: inline-block;
-            background: linear-gradient(45deg, #00ff87, #60efff);
-            color: #0f0c29;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            text-decoration: none;
-            border-radius: 50px;
-            box-shadow: 0 5px 20px rgba(0, 255, 135, 0.4);
-            transition: all 0.3s ease;
-        }
-        .download-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 255, 135, 0.6);
-        }
-        .download-btn:focus-visible {
-            outline: 3px solid #fff;
-            outline-offset: 4px;
-        }
-        .footer {
-            margin-top: 30px;
-            font-size: 0.9rem;
-            color: #aaa;
-        }
-        @media (max-width: 480px) {
-            .container { padding: 30px 20px; }
-            h1 { font-size: 2rem; }
-            p { font-size: 1rem; }
-            .download-btn { padding: 13px 28px; font-size: 1.05rem; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="DrixMods - منصة لتحميل مودات وإضافات Minecraft Bedrock.">
+<title>DrixMods | مودات ماينكرافت</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Cairo,sans-serif;background:radial-gradient(circle at top,#172554 0,#080b14 42%,#05060b 100%);color:#fff;min-height:100vh}
+header{padding:28px 18px;text-align:center;border-bottom:1px solid #ffffff14;background:#080b14cc;backdrop-filter:blur(12px);position:sticky;top:0;z-index:5}
+.logo{font-size:2.2rem;font-weight:900;letter-spacing:.5px;background:linear-gradient(90deg,#38bdf8,#a78bfa,#22d3ee);-webkit-background-clip:text;color:transparent}
+.tag{color:#aeb8cc;margin-top:5px;font-size:.95rem}
+.wrap{width:min(1100px,92%);margin:35px auto 60px}
+.hero{text-align:center;margin-bottom:28px}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:900}
+.hero p{color:#aeb8cc;margin:10px auto 22px;max-width:650px}
+.search{width:100%;max-width:620px;padding:15px 18px;border-radius:16px;border:1px solid #ffffff18;background:#111827;color:#fff;font:inherit;outline:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.card{background:linear-gradient(180deg,#111827ee,#0b1020ee);border:1px solid #ffffff12;border-radius:24px;padding:22px;box-shadow:0 18px 50px #0006;transition:.25s}
+.card:hover{transform:translateY(-4px);border-color:#38bdf855}
+.icon{height:150px;border-radius:18px;background:linear-gradient(135deg,#1e293b,#0f172a);display:grid;place-items:center;font-size:4.5rem;margin-bottom:18px}
+.card h2{font-size:1.35rem;margin-bottom:7px}
+.card p{color:#aeb8cc;line-height:1.8;min-height:65px}
+.badges{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}
+.badge{font-size:.78rem;padding:5px 10px;border-radius:999px;background:#38bdf81a;color:#7dd3fc;border:1px solid #38bdf833}
+.action{width:100%;border:0;border-radius:14px;padding:13px 16px;background:linear-gradient(90deg,#22c55e,#06b6d4);color:#04110a;font:800 1rem Cairo;cursor:pointer}
+.download{display:none;text-decoration:none;text-align:center;margin-top:10px;padding:13px;border-radius:14px;background:linear-gradient(90deg,#a78bfa,#38bdf8);color:#06101a;font-weight:900}
+.timer{display:none;text-align:center;color:#dbeafe;margin-top:12px}
+.bar{height:7px;background:#ffffff12;border-radius:99px;overflow:hidden;margin-top:8px}.fill{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#38bdf8)}
+footer{text-align:center;color:#68738a;padding:28px 15px;border-top:1px solid #ffffff0d}
+.empty{display:none;text-align:center;color:#8b97ad;padding:30px}
+</style>
 </head>
 <body>
-    <main class="container">
-        <h1>مود القرويين المتكلمين</h1>
-        <p>استمتع بتجربة إضافية خرافية داخل لعبة ماينكرافت! احصل على المود الآن واستكشف تفاصيل جديدة كلياً في عالمك.</p>
-        <a href="talking-villagers.mcaddon" download="talking-villagers.mcaddon" class="download-btn">تحميل المود الآن</a>
-        <div class="footer">تم تطوير الموقع وتصميمه باحترافية عالية من أجلك.</div>
-    </main>
+<header><div class="logo">⚒ DrixMods</div><div class="tag">مودات ماينكرافت — حمّل واستمتع</div></header>
+<main class="wrap">
+<section class="hero">
+<h1>مودات ماينكرافت</h1>
+<p>اكتشف إضافات مختارة لماينكرافت Bedrock وحمّلها مباشرة من DrixMods.</p>
+<input id="search" class="search" placeholder="🔎 ابحث عن مود...">
+</section>
+<section id="grid" class="grid">
+<article class="card" data-name="مود القرويين المتكلمين الأصلي">
+<div class="icon">🧑‍🌾</div>
+<h2>مود القرويين المتكلمين</h2>
+<p>النسخة الأصلية من إضافة Villager News، مع القرويين والشخصيات والأصوات والمحتوى الأصلي.</p>
+<div class="badges"><span class="badge">Bedrock</span><span class="badge">1.26.10+</span><span class="badge">MCAddon</span></div>
+<button class="action" onclick="startTimer(this)">عرض التحميل</button>
+<div class="timer"><span>⏳ انتظر 10 ثوانٍ لفتح التحميل...</span><div class="bar"><div class="fill"></div></div></div>
+<a class="download" href="talking-villagers.mcaddon" download>📥 تحميل المود الأصلي</a>
+</article>
+
+<article class="card" data-name="مود القرويين المتكلمين العربية">
+<div class="icon">🧑‍🌾🟢</div>
+<h2>مود القرويين المتكلمين — العربية</h2>
+<p>نسخة عربية مستقلة مبنية على نفس الإضافة، مع الحفاظ على الأصول والأصوات وإضافة تعريب للواجهة والأسماء.</p>
+<div class="badges"><span class="badge">Bedrock</span><span class="badge">عربي</span><span class="badge">MCAddon</span></div>
+<button class="action" onclick="startTimer(this)">عرض التحميل</button>
+<div class="timer"><span>⏳ انتظر 10 ثوانٍ لفتح التحميل...</span><div class="bar"><div class="fill"></div></div></div>
+<a class="download" href="talking-villagers-arabic.mcaddon" download>📥 تحميل النسخة العربية</a>
+</article>
+</section>
+<div id="empty" class="empty">لا توجد مودات مطابقة لبحثك.</div>
+</main>
+<footer>© 2026 DrixMods — مودات وإضافات Minecraft Bedrock</footer>
+<script>
+function startTimer(btn){
+ if(btn.dataset.started)return;
+ btn.dataset.started="1"; btn.disabled=true;
+ const timer=btn.nextElementSibling, fill=timer.querySelector('.fill'), text=timer.querySelector('span'), link=timer.nextElementSibling;
+ timer.style.display='block';
+ let s=10;
+ const id=setInterval(()=>{
+   s--; fill.style.width=((10-s)*10)+'%';
+   if(s>0) text.textContent='⏳ انتظر '+s+' ثوانٍ لفتح التحميل...';
+   else {clearInterval(id);text.textContent='✅ أصبح التحميل متاحًا.';fill.style.width='100%';link.style.display='block';}
+ },1000);
+}
+const search=document.getElementById('search'), cards=[...document.querySelectorAll('.card')], empty=document.getElementById('empty');
+search.addEventListener('input',()=>{
+ const q=search.value.trim().toLowerCase();let shown=0;
+ cards.forEach(c=>{const ok=c.dataset.name.toLowerCase().includes(q);c.style.display=ok?'block':'none';if(ok)shown++;});
+ empty.style.display=shown?'none':'block';
+});
+</script>
 </body>
 </html>
